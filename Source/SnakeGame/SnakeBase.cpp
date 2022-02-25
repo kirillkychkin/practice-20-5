@@ -18,6 +18,9 @@ ASnakeBase::ASnakeBase()
 void ASnakeBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetActorTickInterval(MovementSpeed);
+
 	AddSnakeElement(4);
 }
 
@@ -25,7 +28,7 @@ void ASnakeBase::BeginPlay()
 void ASnakeBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	Move(DeltaTime);
+	Move();
 }
 
 void ASnakeBase::AddSnakeElement(int ElementsNum)
@@ -35,32 +38,41 @@ void ASnakeBase::AddSnakeElement(int ElementsNum)
 		FVector NewLocation(SnakeElements.Num() * ElementSize, 0, 0);
 		FTransform NewTransform = FTransform(NewLocation);
 		ASnakeElementBase* NewSnakeElement = GetWorld()->SpawnActor<ASnakeElementBase>(SnakeElementClass, NewTransform);
-		NewSnakeElement->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+		//NewSnakeElement->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 		SnakeElements.Add(NewSnakeElement);
 	}
 }
 
-void ASnakeBase::Move(float DeltaTime)
+void ASnakeBase::Move()
 {
-	FVector MovementVector;
-	float MovementDelta = MovementSpeed * DeltaTime;
+	FVector MovementVector(ForceInitToZero);
+	float MovementChange = ElementSize;
 
 	switch (LastMoveDirection)
 	{
 		case EMovementDirection::UP:
-			MovementVector.X += MovementDelta;
+			MovementVector.X += MovementChange;
 			break;
 		case EMovementDirection::DOWN:
-			MovementVector.X -= MovementDelta;
+			MovementVector.X -= MovementChange;
 			break;
 		case EMovementDirection::LEFT:
-			MovementVector.Y += MovementDelta;
+			MovementVector.Y += MovementChange;
 			break;
 		case EMovementDirection::RIGHT:
-			MovementVector.Y -= MovementDelta;
+			MovementVector.Y -= MovementChange;
 			break;
 	}
 
-	AddActorWorldOffset(MovementVector);
+	//AddActorWorldOffset(MovementVector);
+	for (int i = SnakeElements.Num() - 1; i > 0; --i)
+	{
+		auto CurrentElem = SnakeElements[i];
+		auto PreviousElement = SnakeElements[i - 1];
+		FVector PreviousLocation = PreviousElement->GetActorLocation();
+		CurrentElem->SetActorLocation(PreviousLocation);
+	}
+
+	SnakeElements[0]->AddActorWorldOffset(MovementVector);
 }
 
